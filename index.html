@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<style>
+
+  path {
+    stroke-width: 1px;
+    stroke: #444;
+  }
+
+  text {
+    font: bold 64px sans-serif;
+    text-anchor: middle;
+    text-transform: uppercase;
+  }
+
+</style>
+<body>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.16/d3.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/queue-async/1.0.7/queue.min.js"></script>
+<script>
+
+var width = 960,
+    height = 500;
+
+var colors = d3.scale.category20().range();
+
+d3.shuffle(colors);
+
+var svg = d3.select("body").append("svg")
+  .attr("width",width)
+  .attr("height",height);
+
+// var projection = d3.geo.conicConformal()
+//   .parallels([34 + 20 / 60, 36 + 10 / 60])
+//   .rotate([79, -33 - 45 / 60])
+//   .scale(6102.002295938357)
+//   .translate([570.5880508434078,431.7927213940179]);
+
+  // var projection = d3.geo.azimuthalEqualArea()
+  // 	.rotate([100, -45,10])
+  // 	.center([-9.9,5.16])
+  // 	.scale(95000)
+  // 	.translate([width/2, height/2])
+  // 	;
+var projection = d3.geo.mercator();
+var path = d3.geo.path().projection(projection);
+
+var oldWards ='https://data.calgary.ca/api/geospatial/r9vx-mhnf?method=export&format=GeoJSON';
+var newWards ='https://data.calgary.ca/api/geospatial/4f6r-atgm?method=export&format=GeoJSON';
+
+queue()
+  .defer(d3.json,"old.geojson")
+  .defer(d3.json,"new.geojson")
+  // .defer(d3.json, oldWards)
+  // .defer(d3.json, newWards)
+  .await(function(err,oldDistricts,newDistricts){
+
+    oldDistricts.features.sort(function(a,b) {
+      return a.properties.ward_num - b.properties.ward_num;
+    });
+    newDistricts.features.sort(function(a,b) {
+      return a.properties.ward_num - b.properties.ward_num;
+    });
+
+    projection
+      .scale(1)
+      .translate([0,0])
+
+    var b = path.bounds(oldDistricts),
+      s = .95 / Math.max((b[1][0] - b[0][0]) / width, (b[1][1] - b[0][1]) / height),
+      t = [(width - s * (b[1][0] + b[0][0])) / 2, (height - s * (b[1][1] + b[0][1])) / 2];
+
+    projection
+      .scale(s)
+      .translate(t)
+
+    var combined = oldDistricts.features.map(function(d,i){
+      return [d,newDistricts.features[i]].map(path);
+    });
+
+    var districts = svg.selectAll("path")
+      .data(combined)
+      .enter()
+      .append("path")
+        .attr("d",next)
+        .style("fill",function(d,i){
+          return colors[i];
+        });
+
+    var label = svg.append("text")
+      .datum(["Old","New"])
+      .text(next)
+      .attr("x",300)
+      .attr("y",400);
+
+    morph();
+
+    function morph() {
+      var duration = 4000;
+      districts.transition()
+        .duration(duration)
+        .attr("d",next)
+        .each("end",function(d,i){
+
+          if (i === combined.length - 1) {
+            morph();
+          }
+
+        });
+
+      label.transition()
+        .duration(0)
+        .delay(duration / 2)
+        .each("end",function(){
+          label.text(next);
+        });
+
+    }
+
+  });
+
+function next(d) {
+  return d.reverse()[1];
+}
+
+</script>
