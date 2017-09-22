@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
 <style>
 
   path {
@@ -8,10 +9,17 @@
   }
 
   text {
-    font: bold 64px sans-serif;
+    font: bold 60px sans-serif;
     text-anchor: middle;
     text-transform: uppercase;
   }
+
+  .names text {
+    font: bold 20px sans-serif;
+    text-anchor: middle;
+    text-transform: uppercase;
+  }
+
 
 </style>
 <body>
@@ -19,8 +27,8 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/queue-async/1.0.7/queue.min.js"></script>
 <script>
 
-var width = 960,
-    height = 500;
+var width = window.innerWidth,
+    height = window.innerHeight;
 
 var colors = d3.scale.category20().range();
 
@@ -78,6 +86,10 @@ queue()
       return [d,newDistricts.features[i]].map(path);
     });
 
+    var combinedCentres = newDistricts.features.map(function(d,i){
+      return [d,oldDistricts.features[i]];
+    });
+
     var districts = svg.selectAll("path")
       .data(combined)
       .enter()
@@ -87,11 +99,28 @@ queue()
           return colors[i];
         });
 
+    var names = svg.append('g')
+      .attr("class", "names")
+      .selectAll("text")
+      .data(combinedCentres)
+      .enter()
+      .append("text")
+        .text(function(d) {
+          return next(d).properties.district;
+        })
+        .style("font", "20px")
+        .attr("transform", function(d) {
+          return "translate(" + path.centroid(next(d)) + ")";
+        })
+        .style("fill", "#fff")
+
+
     var label = svg.append("text")
       .datum(["Old","New"])
       .text(next)
-      .attr("x",300)
-      .attr("y",400);
+      .attr("text-anchor", "start")
+      .attr("x",width/2 - 120)
+      .attr("y",height/2 + 120);
 
     morph();
 
@@ -107,6 +136,12 @@ queue()
           }
 
         });
+
+      names.transition()
+        .duration(duration)
+        .attr("transform", function(d) {
+          return "translate(" + path.centroid(next(d)) + ")";
+        })
 
       label.transition()
         .duration(0)
