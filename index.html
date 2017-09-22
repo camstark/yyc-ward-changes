@@ -31,15 +31,16 @@
 
 </style>
 <body>
-<h1 id='label' class='text-center'>Old</h1>
+<h2 id='title' class='text-center' style="color: gray">Calgary Wards</h2>
+<h2 id='label' class='text-center'>Old</h2>
 <script src="https://code.jquery.com/jquery-3.2.1.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.16/d3.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/queue-async/1.0.7/queue.min.js"></script>
 <script>
 
-var headingHeight = $('#label').height();
+var headingHeight = $('#label').outerHeight() + $('#title').outerHeight();
 var width = window.innerWidth,
-    height = window.innerHeight - headingHeight;
+    height = window.innerHeight - headingHeight - 10;
 
 var colors = d3.scale.category20().range();
 
